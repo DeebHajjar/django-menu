@@ -57,7 +57,7 @@ python manage.py test
 | `DJANGO_DEBUG` | `1` | `0` in production |
 | `DJANGO_SECRET_KEY` | dev key | Required when `DJANGO_DEBUG=0` |
 | `DJANGO_ALLOWED_HOSTS` | `127.0.0.1,localhost` | Comma-separated |
-| `CORS_ALLOWED_ORIGINS` | `http://127.0.0.1:5500,http://localhost:5500` | Where the front end is served |
+| `CORS_ALLOWED_ORIGINS` | `http://127.0.0.1:5500,http://localhost:5500,https://deebhajjar.github.io` | Where the front end is served: scheme and host only, no path |
 | `MENU_SITE_URL` | `http://127.0.0.1:5500/` | "View the menu" link in the panel |
 
 In production, run `python manage.py collectstatic` and let the web server serve

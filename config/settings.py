@@ -105,8 +105,11 @@ MENU_SITE_URL = os.environ.get("MENU_SITE_URL", "http://127.0.0.1:5500/")
 
 
 # API
+# A browser only hands the menu to a page whose origin is listed here. The
+# origin is the scheme and host alone: no path, no trailing slash.
 CORS_ALLOWED_ORIGINS = env_list(
-    "CORS_ALLOWED_ORIGINS", "http://127.0.0.1:5500,http://localhost:5500"
+    "CORS_ALLOWED_ORIGINS",
+    "http://127.0.0.1:5500,http://localhost:5500,https://deebhajjar.github.io",
 )
 CORS_ALLOW_METHODS = ["GET", "OPTIONS"]
 
