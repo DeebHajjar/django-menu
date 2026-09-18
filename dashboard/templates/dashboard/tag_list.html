@@ -1,0 +1,40 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Tags{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Tags</h1>
+    <p class="page-head__lead">Small labels under a dish. The menu knows signature, vegan, vegetarian, gluten_free, spicy and new; other tags are shown as written.</p>
+  </div>
+  <a class="button button--primary" href="{% url 'dashboard:tag_create' %}">Add a tag</a>
+</div>
+
+{% if object_list %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th>Tag</th><th>Code</th><th class="num">Dishes</th><th><span class="visually-hidden">Actions</span></th></tr>
+      </thead>
+      <tbody>
+        {% for tag in object_list %}
+          <tr>
+            <td><span class="tag tag--{{ tag.code }}">{{ tag.label }}</span></td>
+            <td class="muted"><code>{{ tag.code }}</code></td>
+            <td class="num">{{ tag.dish_total }}</td>
+            <td>
+              <div class="actions">
+                <a class="button button--small" href="{% url 'dashboard:tag_update' tag.pk %}">Edit</a>
+                <a class="button button--small button--quiet" href="{% url 'dashboard:tag_delete' tag.pk %}">Delete</a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="empty">No tags yet. <a href="{% url 'dashboard:tag_create' %}">Add the first one</a>.</p>
+{% endif %}
+{% endblock %}

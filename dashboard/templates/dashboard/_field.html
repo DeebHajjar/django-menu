@@ -1,0 +1,37 @@
+{% load panel_tags %}
+{% if field|is_checkbox %}
+  <div class="field{% if field.errors %} field--invalid{% endif %}">
+    <label class="check">
+      {{ field }}
+      <span class="check__text">
+        <span class="field__label">{{ field.label|capfirst }}</span>
+        {% if field.help_text %}<span class="field__help">{{ field.help_text }}</span>{% endif %}
+      </span>
+    </label>
+    {% if field.errors %}<ul class="field__errors">{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+{% elif field|is_multi_checkbox %}
+  <fieldset class="field fieldset{% if field.errors %} field--invalid{% endif %}" style="gap: var(--space-xs)">
+    <legend class="field__label">{{ field.label|capfirst }}</legend>
+    <div class="chips">{{ field }}</div>
+    {% if field.help_text %}<span class="field__help">{{ field.help_text }}</span>{% endif %}
+    {% if field.errors %}<ul class="field__errors">{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+  </fieldset>
+{% else %}
+  <div class="field{% if field.errors %} field--invalid{% endif %}">
+    <label class="field__label" for="{{ field.id_for_label }}">
+      {{ field.label|capfirst }}{% if not field.field.required %} <span class="field__optional">(optional)</span>{% endif %}
+    </label>
+    {% if field|is_file %}
+      <div class="upload">
+        <img class="upload__preview{% if contain %} upload__preview--contain{% endif %}" alt=""
+             {% if field.value and field.value.url %}src="{{ field.value.url }}"{% else %}hidden{% endif %}>
+        <div class="upload__controls">{{ field }}</div>
+      </div>
+    {% else %}
+      {{ field }}
+    {% endif %}
+    {% if field.help_text %}<span class="field__help">{{ field.help_text }}</span>{% endif %}
+    {% if field.errors %}<ul class="field__errors">{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+{% endif %}

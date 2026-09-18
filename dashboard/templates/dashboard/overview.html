@@ -1,0 +1,62 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Overview{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Welcome back, {{ user.get_short_name|default:user.get_username }}</h1>
+    <p class="page-head__lead">Everything on the menu, at a glance.</p>
+  </div>
+  <div class="actions">
+    <a class="button" href="{% url 'dashboard:category_create' %}">Add a category</a>
+    <a class="button button--primary" href="{% url 'dashboard:dish_create' %}">Add a dish</a>
+  </div>
+</div>
+
+{% if not panel_restaurant %}
+  <p class="message message--error">The restaurant details are empty, so the menu shows a generic title.
+    <a href="{% url 'dashboard:restaurant' %}">Fill them in</a>.</p>
+{% endif %}
+
+<div class="stats">
+  <a class="stat" href="{% url 'dashboard:dish_list' %}">
+    <span class="stat__value">{{ dish_count }}</span>
+    <span class="stat__label">Dishes</span>
+    <span class="stat__note">{{ unavailable_count }} not available today · {{ unpublished_count }} hidden</span>
+  </a>
+  <a class="stat" href="{% url 'dashboard:category_list' %}">
+    <span class="stat__value">{{ category_count }}</span>
+    <span class="stat__label">Categories</span>
+    <span class="stat__note">{{ hidden_category_count }} hidden</span>
+  </a>
+  <a class="stat" href="{% url 'dashboard:tag_list' %}">
+    <span class="stat__value">{{ tag_count }}</span>
+    <span class="stat__label">Tags</span>
+    <span class="stat__note">Vegan, spicy, signature…</span>
+  </a>
+</div>
+
+<h2 class="section-title">Categories</h2>
+{% if categories %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th>Category</th><th>Status</th><th class="num">Dishes</th><th><span class="visually-hidden">Actions</span></th></tr>
+      </thead>
+      <tbody>
+        {% for category in categories %}
+          <tr>
+            <td><a class="table__name" href="{% url 'dashboard:dish_list' %}?category={{ category.slug }}">{{ category.name }}</a></td>
+            <td>{% if category.is_active %}<span class="badge badge--on">Shown</span>{% else %}<span class="badge badge--off">Hidden</span>{% endif %}</td>
+            <td class="num">{{ category.dish_total }}</td>
+            <td><div class="actions"><a class="button button--small" href="{% url 'dashboard:dish_create' %}?category={{ category.slug }}">Add a dish</a></div></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="empty">No categories yet. <a href="{% url 'dashboard:category_create' %}">Add the first one</a>.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,49 @@
+/*
+ * Design tokens: a plain, light interface.
+ * White page, warm charcoal text, one ember accent for prices and the
+ * current category. The photo header is the only dark area.
+ */
+:root {
+  color-scheme: light;
+
+  --color-bg: #ffffff;
+  --color-surface: #f6f5f2;
+  --color-text: #24211e;
+  --color-text-muted: #6b655e;
+  --color-accent: #a8551a;
+  --color-accent-soft: #f6ede3;
+  --color-line: rgb(36 33 30 / 0.12);
+  --color-line-strong: rgb(36 33 30 / 0.28);
+  --color-skeleton: rgb(36 33 30 / 0.08);
+  --color-skeleton-shine: rgb(255 255 255 / 0.65);
+  --color-backdrop: rgb(27 26 23 / 0.55);
+  --color-focus: #a8551a;
+  --dark: #1b1a17;
+  --dark-text: #f4f1ea;
+
+  --font-body: "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.0625rem;
+  --step-2: 1.25rem;
+  --step-3: 1.75rem;
+  --step-hero: clamp(2.75rem, 1.6rem + 4.5vw, 4.5rem);
+
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-s: 0.75rem;
+  --space-m: 1rem;
+  --space-l: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --gutter: clamp(1rem, 0.5rem + 2vw, 2rem);
+  --content-max: 46rem;
+
+  --radius-s: 6px;
+  --radius-m: 12px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration-base: 300ms;
+}

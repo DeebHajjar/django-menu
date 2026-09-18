@@ -1,0 +1,72 @@
+{% load static %}<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#1b1a17">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}Control panel{% endblock %} · {{ panel_restaurant.name|default:"Menu" }}</title>
+  <link rel="icon" href="{% static 'dashboard/img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="{% static 'dashboard/css/panel.css' %}">
+  <script src="{% static 'dashboard/js/panel.js' %}" defer></script>
+</head>
+<body>
+{% block body %}
+  <a class="skip-link" href="#content">Skip to the content</a>
+
+  <header class="panel-header">
+    <div class="wrap panel-header__inner">
+      <a class="brand" href="{% url 'dashboard:overview' %}">
+        <img class="brand__logo" src="{% if panel_restaurant.logo %}{{ panel_restaurant.logo.url }}{% else %}{% static 'dashboard/img/logo.svg' %}{% endif %}" alt="">
+        <span>
+          <span class="brand__name">{{ panel_restaurant.name|default:"Menu" }}</span><br>
+          <span class="brand__sub">Control panel</span>
+        </span>
+      </a>
+      <div class="account">
+        <a href="{{ menu_site_url }}" target="_blank" rel="noopener">View the menu ↗</a>
+        <span>Signed in as <strong>{{ user.get_username }}</strong></span>
+        <form method="post" action="{% url 'dashboard:logout' %}">
+          {% csrf_token %}
+          <button class="link-button" type="submit">Sign out</button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  {% with section=view.section %}
+  <nav class="panel-nav" aria-label="Panel sections">
+    <ul class="tabs" role="list">
+      <li class="tabs__item"><a class="tabs__link" href="{% url 'dashboard:overview' %}"{% if section == 'overview' %} aria-current="page"{% endif %}>Overview</a></li>
+      <li class="tabs__item"><a class="tabs__link" href="{% url 'dashboard:restaurant' %}"{% if section == 'restaurant' %} aria-current="page"{% endif %}>Restaurant</a></li>
+      <li class="tabs__item"><a class="tabs__link" href="{% url 'dashboard:category_list' %}"{% if section == 'categories' %} aria-current="page"{% endif %}>Categories</a></li>
+      <li class="tabs__item"><a class="tabs__link" href="{% url 'dashboard:dish_list' %}"{% if section == 'dishes' %} aria-current="page"{% endif %}>Dishes</a></li>
+      <li class="tabs__item"><a class="tabs__link" href="{% url 'dashboard:tag_list' %}"{% if section == 'tags' %} aria-current="page"{% endif %}>Tags</a></li>
+    </ul>
+  </nav>
+  {% endwith %}
+
+  <main class="panel" id="content" tabindex="-1">
+    <div class="wrap">
+      {% if messages %}
+        <div class="messages" role="status">
+          {% for message in messages %}
+            <p class="message{% if message.tags %} message--{{ message.tags }}{% endif %}">{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer class="panel-footer">
+    <div class="wrap">Changes appear on the menu as soon as they are saved.</div>
+  </footer>
+{% endblock %}
+</body>
+</html>

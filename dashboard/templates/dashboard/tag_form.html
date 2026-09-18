@@ -1,0 +1,25 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{% if object %}Edit {{ object.code }}{% else %}Add a tag{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="page-head__lead"><a href="{% url 'dashboard:tag_list' %}">Tags</a> /</p>
+    <h1 class="page-head__title">{% if object %}Edit “{{ object.code }}”{% else %}Add a tag{% endif %}</h1>
+  </div>
+  {% if object %}<a class="button button--quiet" href="{% url 'dashboard:tag_delete' object.pk %}">Delete</a>{% endif %}
+</div>
+
+<form class="form" method="post" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="message message--error">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="fieldset">
+    {% include "dashboard/_field.html" with field=form.code %}
+  </div>
+  <div class="form-actions">
+    <button class="button button--primary" type="submit">{% if object %}Save changes{% else %}Add the tag{% endif %}</button>
+    <a class="button button--quiet" href="{% url 'dashboard:tag_list' %}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

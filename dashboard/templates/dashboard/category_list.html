@@ -1,0 +1,50 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Categories{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Categories</h1>
+    <p class="page-head__lead">The tabs of the menu, in this order.</p>
+  </div>
+  <a class="button button--primary" href="{% url 'dashboard:category_create' %}">Add a category</a>
+</div>
+
+{% if object_list %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th class="num">Order</th>
+          <th>Category</th>
+          <th>Status</th>
+          <th class="num">Dishes</th>
+          <th><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for category in object_list %}
+          <tr>
+            <td class="num muted">{{ category.order }}</td>
+            <td>
+              <a class="table__name" href="{% url 'dashboard:category_update' category.pk %}">{{ category.name }}</a>
+              {% if category.description %}<div class="small muted">{{ category.description }}</div>{% endif %}
+            </td>
+            <td>{% if category.is_active %}<span class="badge badge--on">Shown</span>{% else %}<span class="badge badge--off">Hidden</span>{% endif %}</td>
+            <td class="num"><a href="{% url 'dashboard:dish_list' %}?category={{ category.slug }}">{{ category.dish_shown }}{% if category.dish_shown != category.dish_total %} <span class="muted">of {{ category.dish_total }}</span>{% endif %}</a></td>
+            <td>
+              <div class="actions">
+                <a class="button button--small" href="{% url 'dashboard:category_update' category.pk %}">Edit</a>
+                <a class="button button--small button--quiet" href="{% url 'dashboard:category_delete' category.pk %}">Delete</a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="empty">No categories yet. <a href="{% url 'dashboard:category_create' %}">Add the first one</a>.</p>
+{% endif %}
+{% endblock %}

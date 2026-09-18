@@ -1,0 +1,146 @@
+/* The dish list: photo, name, ingredients, price */
+
+/* One block per category, separated by a full-width rule */
+.course + .course {
+  border-block-start: 1px solid var(--color-line-strong);
+}
+
+/*
+ * The category name stays under the category bar while its dishes scroll
+ * past, so the reader always knows which part of the menu this is.
+ */
+.course__header {
+  position: sticky;
+  top: var(--menu-nav-height, 3rem);
+  z-index: 10;
+  padding-block: var(--space-l) var(--space-m);
+  background: var(--color-bg);
+}
+
+.course__title {
+  font-size: var(--step-3);
+  line-height: 1.2;
+}
+
+.course__title:focus-visible {
+  outline-offset: 4px;
+}
+
+.course__description {
+  margin-block-start: var(--space-2xs);
+  color: var(--color-text-muted);
+}
+
+.dishes {
+  display: grid;
+}
+
+.dishes__item + .dishes__item {
+  border-block-start: 1px solid var(--color-line);
+}
+
+.dish {
+  position: relative;
+  display: grid;
+  grid-template-columns: clamp(5rem, 22vw, 6.5rem) minmax(0, 1fr);
+  gap: var(--space-m);
+  align-items: start;
+  padding-block: var(--space-l);
+}
+
+.dish__media {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-s);
+}
+
+.dish__body {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.dish__name {
+  font-size: var(--step-2);
+  font-weight: 600;
+}
+
+.dish__trigger {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: start;
+  transition: color var(--duration-fast) ease;
+}
+
+/* The button covers the row, so the photo opens the details too */
+.dish__trigger::after {
+  content: "";
+  position: absolute;
+  inset: var(--space-xs) calc(-1 * var(--space-xs));
+  border-radius: var(--radius-s);
+}
+
+.dish__trigger:focus-visible {
+  outline: none;
+}
+
+.dish__trigger:focus-visible::after {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.dish:hover .dish__trigger {
+  color: var(--color-accent);
+}
+
+.dish__ingredients {
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.dish__price {
+  margin-block-start: var(--space-2xs);
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.dish__status {
+  font-size: var(--step--1);
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.dish--unavailable .dish__media {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.dish--unavailable .dish__name,
+.dish--unavailable .dish__price,
+.dish--unavailable .dish__ingredients {
+  opacity: 0.55;
+}
+
+/* Tags */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-xs);
+  margin-block-start: var(--space-2xs);
+}
+
+.tag {
+  padding: 0.05rem 0.5rem;
+  border-radius: var(--radius-s);
+  background: var(--color-surface);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--color-text-muted);
+}
+
+.tag--signature {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}

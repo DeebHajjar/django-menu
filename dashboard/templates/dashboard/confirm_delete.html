@@ -1,0 +1,32 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Delete {{ object }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="page-head__title">Delete the {{ kind }} “{{ object }}”?</h1>
+</div>
+
+<div class="confirm">
+  {% if blockers %}
+    <p>This {{ kind }} can’t be deleted yet. {{ blocker_message }}</p>
+    <ul>
+      {% for item in blockers %}
+        <li><a href="{% url 'dashboard:dish_update' item.pk %}">{{ item }}</a></li>
+      {% endfor %}
+    </ul>
+    <p class="muted small">To take it off the menu without deleting anything, edit it and untick “Shown on the menu”.</p>
+    <div class="actions">
+      <a class="button" href="{{ cancel_url }}">Back</a>
+    </div>
+  {% else %}
+    <p>It will be removed from the menu straight away. This can’t be undone.</p>
+    {% if note %}<p class="muted">{{ note }}</p>{% endif %}
+    <form method="post" class="actions">
+      {% csrf_token %}
+      <button class="button button--danger" type="submit">Yes, delete it</button>
+      <a class="button button--quiet" href="{{ cancel_url }}">Cancel</a>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

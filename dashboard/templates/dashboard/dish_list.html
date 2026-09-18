@@ -1,0 +1,77 @@
+{% extends "dashboard/base.html" %}
+{% load panel_tags %}
+
+{% block title %}Dishes{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Dishes</h1>
+    <p class="page-head__lead">As they appear on the menu. Select a dish to edit it.</p>
+  </div>
+  <a class="button button--primary" href="{% url 'dashboard:dish_create' %}{% if selected %}?category={{ selected }}{% endif %}">Add a dish</a>
+</div>
+
+{% if all_categories %}
+  <nav class="filter" aria-label="Filter by category">
+    <a class="button button--small{% if not selected %} button--primary{% endif %}" href="{% url 'dashboard:dish_list' %}">All</a>
+    {% for category in all_categories %}
+      <a class="button button--small{% if selected == category.slug %} button--primary{% endif %}" href="?category={{ category.slug }}">{{ category.name }}</a>
+    {% endfor %}
+  </nav>
+{% endif %}
+
+{% for category in categories %}
+  <section class="course" id="category-{{ category.pk }}" aria-labelledby="category-title-{{ category.pk }}">
+    <header class="course__header">
+      <div>
+        <h2 class="course__title" id="category-title-{{ category.pk }}">
+          {{ category.name }}
+          {% if not category.is_active %}<span class="badge badge--off">Hidden category</span>{% endif %}
+        </h2>
+        {% if category.description %}<p class="course__description">{{ category.description }}</p>{% endif %}
+      </div>
+      <a class="button button--small" href="{% url 'dashboard:dish_create' %}?category={{ category.slug }}">Add a dish here</a>
+    </header>
+
+    {% if category.dishes.all %}
+      <ul class="dishes" role="list">
+        {% for dish in category.dishes.all %}
+          <li class="dishes__item">
+            <article class="dish{% if not dish.is_available %} dish--unavailable{% endif %}{% if not dish.is_published %} dish--hidden{% endif %}" id="dish-{{ dish.pk }}">
+              <div class="dish__media media{% if not dish.image %} is-missing{% endif %}" data-initial="{{ dish.name|first }}">
+                {% if dish.image %}<img src="{{ dish.image.url }}" alt="" loading="lazy">{% endif %}
+              </div>
+              <div class="dish__body">
+                <h3 class="dish__name"><a href="{% url 'dashboard:dish_update' dish.pk %}">{{ dish.name }}</a></h3>
+                {% if dish.ingredients %}<p class="dish__ingredients">{{ dish.ingredients|join:", " }}</p>{% endif %}
+                {% if dish.tags.all %}
+                  <ul class="tags" role="list">
+                    {% for tag in dish.tags.all %}<li class="tag tag--{{ tag.code }}">{{ tag.label }}</li>{% endfor %}
+                  </ul>
+                {% endif %}
+                <p class="dish__price">{{ dish.price|price:currency }}</p>
+                {% if not dish.is_available %}<p class="dish__status">Not available today</p>{% endif %}
+              </div>
+              <div class="dish__controls">
+                <form method="post" action="{% url 'dashboard:dish_toggle' dish.pk %}">
+                  {% csrf_token %}
+                  <button class="button button--small" type="submit">{% if dish.is_available %}Mark unavailable{% else %}Mark available{% endif %}</button>
+                </form>
+                <div class="actions">
+                  <a class="button button--small" href="{% url 'dashboard:dish_update' dish.pk %}">Edit</a>
+                  <a class="button button--small button--quiet" href="{% url 'dashboard:dish_delete' dish.pk %}">Delete</a>
+                </div>
+              </div>
+            </article>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">No dishes in this category yet.</p>
+    {% endif %}
+  </section>
+{% empty %}
+  <p class="empty">Dishes belong to a category. <a href="{% url 'dashboard:category_create' %}">Add a category</a> first.</p>
+{% endfor %}
+{% endblock %}

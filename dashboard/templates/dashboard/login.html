@@ -1,0 +1,33 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Sign in{% endblock %}
+
+{% block body %}
+<main class="login"{% if panel_restaurant.hero_image %} style="background-image: url('{{ panel_restaurant.hero_image.url }}')"{% endif %}>
+  <div class="login__wrap">
+    <div class="login__brand">
+      <img class="login__logo" src="{% if panel_restaurant.logo %}{{ panel_restaurant.logo.url }}{% else %}{% static 'dashboard/img/logo.svg' %}{% endif %}" alt="">
+      <h1 class="login__name">{{ panel_restaurant.name|default:"Menu" }}</h1>
+      <p class="login__sub">Control panel</p>
+    </div>
+
+    <form class="login__card" method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+
+      {% if form.non_field_errors %}
+        <div class="message message--error" role="alert">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+      {% endif %}
+
+      {% include "dashboard/_field.html" with field=form.username %}
+      {% include "dashboard/_field.html" with field=form.password %}
+
+      <button class="button button--primary" type="submit">Sign in</button>
+      <p class="login__note">Accounts are created by the site administrator.</p>
+    </form>
+  </div>
+</main>
+{% endblock %}

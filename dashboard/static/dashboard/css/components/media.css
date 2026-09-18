@@ -1,0 +1,34 @@
+/* Image wrapper created by js/utils/media.js */
+.media {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--duration-base) ease;
+}
+
+.media.is-loaded img {
+  opacity: 1;
+}
+
+/* Missing or broken image: the first letter on a plain tile */
+.media.is-missing {
+  display: grid;
+  place-items: center;
+  container-type: inline-size;
+}
+
+.media.is-missing::after {
+  content: attr(data-initial);
+  font-size: clamp(1.25rem, 34cqi, 3rem);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-accent);
+}

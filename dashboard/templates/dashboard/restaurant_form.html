@@ -1,0 +1,87 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Restaurant{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Restaurant</h1>
+    <p class="page-head__lead">The photo header, the footer and the currency of the menu.</p>
+  </div>
+</div>
+
+<form class="form" method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="message message--error">{{ form.non_field_errors }}</div>{% endif %}
+
+  <fieldset class="fieldset">
+    <legend class="fieldset__legend">Name and header</legend>
+    <div class="grid-2">
+      {% include "dashboard/_field.html" with field=form.name %}
+      {% include "dashboard/_field.html" with field=form.tagline %}
+    </div>
+    {% include "dashboard/_field.html" with field=form.description %}
+    <div class="grid-2">
+      {% include "dashboard/_field.html" with field=form.logo contain=True %}
+      {% include "dashboard/_field.html" with field=form.hero_image %}
+    </div>
+    <div class="grid-2">
+      {% include "dashboard/_field.html" with field=form.currency %}
+    </div>
+  </fieldset>
+
+  <fieldset class="fieldset">
+    <legend class="fieldset__legend">Contact</legend>
+    {% include "dashboard/_field.html" with field=form.address %}
+    <div class="grid-2">
+      {% include "dashboard/_field.html" with field=form.phone %}
+      {% include "dashboard/_field.html" with field=form.email %}
+    </div>
+  </fieldset>
+
+  <fieldset class="fieldset">
+    <legend class="fieldset__legend">Opening hours</legend>
+    <p class="field__help">The first row is also shown at the bottom of the photo. Fill in the empty row to add one; save to get another empty row.</p>
+    {{ hours_formset.management_form }}
+    {% if hours_formset.non_form_errors %}<div class="message message--error">{{ hours_formset.non_form_errors }}</div>{% endif %}
+    <div class="rows">
+      {% for row in hours_formset %}
+        <div class="row">
+          {% for hidden in row.hidden_fields %}{{ hidden }}{% endfor %}
+          {% include "dashboard/_field.html" with field=row.days %}
+          {% include "dashboard/_field.html" with field=row.hours %}
+          {% include "dashboard/_field.html" with field=row.order %}
+          {% if row.instance.pk %}
+            <label class="check">{{ row.DELETE }} Remove</label>
+          {% else %}<span class="small muted" style="padding-block-end: .75rem">New</span>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <fieldset class="fieldset">
+    <legend class="fieldset__legend">Social links</legend>
+    <p class="field__help">Instagram, Facebook, WhatsApp, TikTok, YouTube, X, Telegram and LinkedIn addresses show their logo on the menu.</p>
+    {{ social_formset.management_form }}
+    {% if social_formset.non_form_errors %}<div class="message message--error">{{ social_formset.non_form_errors }}</div>{% endif %}
+    <div class="rows">
+      {% for row in social_formset %}
+        <div class="row row--social">
+          {% for hidden in row.hidden_fields %}{{ hidden }}{% endfor %}
+          {% include "dashboard/_field.html" with field=row.label %}
+          {% include "dashboard/_field.html" with field=row.url %}
+          {% include "dashboard/_field.html" with field=row.order %}
+          {% if row.instance.pk %}
+            <label class="check">{{ row.DELETE }} Remove</label>
+          {% else %}<span class="small muted" style="padding-block-end: .75rem">New</span>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <div class="form-actions">
+    <button class="button button--primary" type="submit">Save changes</button>
+    <a class="button button--quiet" href="{% url 'dashboard:overview' %}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

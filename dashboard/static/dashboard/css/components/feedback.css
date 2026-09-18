@@ -1,0 +1,110 @@
+/* Loading skeletons, empty and error states */
+.skeleton {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: var(--color-skeleton);
+  border-radius: var(--radius-s);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, var(--color-skeleton-shine) 50%, transparent 80%);
+  transform: translateX(-100%);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton--line {
+  height: 1.1rem;
+  margin-block: 0.3rem;
+}
+
+.skeleton--thin {
+  height: 0.75rem;
+}
+
+@keyframes shimmer {
+  to { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    display: none;
+  }
+}
+
+.state {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-s);
+  max-width: 32rem;
+  margin: var(--space-2xl) auto;
+  padding: var(--space-xl) var(--space-l);
+  text-align: center;
+}
+
+.state__title {
+  font-size: var(--step-3);
+}
+
+.state__message {
+  color: var(--color-text-muted);
+}
+
+.state .button,
+.state a.button {
+  margin-block-start: var(--space-s);
+}
+
+/* The only button style this design needs */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.6rem 1.5rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-s);
+  background: none;
+  font: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.button:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* "More of the menu is on the way", at the end of the list */
+.menu-feed__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding-block: var(--space-xl);
+  font-size: var(--step--1);
+  color: var(--color-text-muted);
+}
+
+.menu-feed__spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--color-line);
+  border-block-start-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(1turn); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-feed__spinner {
+    animation: none;
+  }
+}
