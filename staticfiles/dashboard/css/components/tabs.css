@@ -1,0 +1,81 @@
+/* The category bar, and the page area under it */
+.menu {
+  background: var(--color-bg);
+  padding-block-end: var(--space-2xl);
+}
+
+.menu:focus {
+  outline: none;
+}
+
+.menu__inner {
+  width: min(100% - 2 * var(--gutter), var(--content-max));
+  margin-inline: auto;
+}
+
+.menu__view {
+  min-height: 60vh;
+}
+
+.menu-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--color-bg);
+  border-block-end: 1px solid var(--color-line-strong);
+}
+
+/* `ul.tabs` beats the list reset's margin */
+ul.tabs {
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  width: min(100% - 2 * var(--gutter), var(--content-max));
+  margin-inline: auto;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tabs.is-overflowing {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 1.5rem, #000 calc(100% - 1.5rem), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 1.5rem, #000 calc(100% - 1.5rem), transparent);
+}
+
+/* A rule between tabs, as on a printed board */
+.tabs__item + .tabs__item {
+  border-inline-start: 1px solid var(--color-line);
+}
+
+.tabs__link {
+  display: block;
+  padding: var(--space-m) var(--space-l);
+  font-size: var(--step-1);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  border-block-end: 2px solid transparent;
+  transition: color var(--duration-fast) ease;
+}
+
+.tabs__link:hover {
+  color: var(--color-text);
+}
+
+.tabs__link[aria-current="page"] {
+  color: var(--color-accent);
+  border-block-end-color: var(--color-accent);
+}
+
+.tabs__link:focus-visible {
+  outline-offset: -3px;
+}
+
+@media (max-width: 30rem) {
+  .tabs__link {
+    padding-inline: var(--space-m);
+  }
+}
