@@ -86,6 +86,7 @@ class Command(BaseCommand):
             getattr(instance, field).save(path.name, File(handle), save=False)
 
     def load_restaurant(self, data, source):
+        ordering = data.get("ordering") or {}
         restaurant = Restaurant(
             name=data.get("name", "Restaurant"),
             tagline=data.get("tagline", ""),
@@ -94,6 +95,11 @@ class Command(BaseCommand):
             address=data.get("address", ""),
             phone=data.get("phone", ""),
             email=data.get("email", ""),
+            whatsapp_number=ordering.get("whatsapp_number", ""),
+            delivery_fee=ordering.get("delivery_fee", 0) or 0,
+            delivery_enabled=ordering.get("delivery_enabled", True),
+            pickup_enabled=ordering.get("pickup_enabled", True),
+            delivery_note=ordering.get("delivery_note", ""),
         )
         self.attach_file(restaurant, "logo", source, data.get("logo"))
         self.attach_file(restaurant, "hero_image", source, data.get("hero_image"))

@@ -1,8 +1,21 @@
-from django.core.validators import FileExtensionValidator, MinValueValidator
+import re
+
+from django.core.validators import FileExtensionValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.utils.text import slugify
 
 LOGO_EXTENSIONS = ["svg", "png", "jpg", "jpeg", "webp"]
+
+#: WhatsApp links (wa.me) take the number in full international form, digits
+#: only: no "+", no spaces, no leading zero. 9613000000, not +961 3 000 000.
+whatsapp_validator = RegexValidator(
+    r"^\d{8,15}$",
+    "Digits only, in full international form: 9613000000 (no +, spaces or leading zero).",
+)
+
+
+def digits_only(value):
+    return re.sub(r"\D", "", value or "")
 
 
 def unique_slug(instance, value, max_length=50):
@@ -39,13 +52,47 @@ class Restaurant(models.Model):
     phone = models.CharField(max_length=40, blank=True)
     email = models.EmailField(blank=True)
 
+    # Ordering: the menu builds a WhatsApp message and sends it to this number.
+    # Orders are never stored here — the conversation is the only record.
+    whatsapp_number = models.CharField(
+        "WhatsApp number for orders",
+        max_length=20,
+        blank=True,
+        validators=[whatsapp_validator],
+        help_text="Digits only, in full international form: 9613000000. Leave empty to turn ordering off.",
+    )
+    delivery_fee = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text="Added to the order when the customer chooses delivery. 0 is shown as “Free”.",
+    )
+    delivery_enabled = models.BooleanField(
+        "home delivery offered", default=True, help_text="Off removes the delivery choice from the cart."
+    )
+    pickup_enabled = models.BooleanField(
+        "pickup offered", default=True, help_text="Off removes the pickup choice from the cart."
+    )
+    delivery_note = models.CharField(
+        max_length=160,
+        blank=True,
+        help_text="Shown under the delivery choice, e.g. “Delivery inside Chhim only”.",
+    )
+
     def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):
         self.pk = 1
         self.currency = self.currency.upper()
+        self.whatsapp_number = digits_only(self.whatsapp_number)
         super().save(*args, **kwargs)
+
+    @property
+    def ordering_enabled(self):
+        """Ordering needs somewhere to send the order and a way to receive it."""
+        return bool(self.whatsapp_number) and (self.delivery_enabled or self.pickup_enabled)
 
     @classmethod
     def load(cls):

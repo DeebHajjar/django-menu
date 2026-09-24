@@ -5,11 +5,13 @@ A control panel for editing the menu, and the read-only REST API the front end (
 | Address | What it is |
 |---|---|
 | `/panel/` | Control panel (staff accounts only) |
-| `/api/v1/restaurant/` | Restaurant details |
+| `/api/v1/restaurant/` | Restaurant details, including the `ordering` block |
 | `/api/v1/categories/` | Categories shown on the menu |
 | `/api/v1/dishes/?category=<slug>` | Dishes of one category |
 
-The API follows `restaurant-menu-simple/docs/API.md` exactly.
+The API follows `restaurant-menu-simple-cart/docs/API.md` exactly. The older
+`restaurant-menu-simple`, `restaurant-menu` and `restaurant-menu-light` front
+ends ignore fields they do not know, so `ordering` does not disturb them.
 
 ## Setup (Windows, PowerShell)
 
@@ -30,12 +32,32 @@ create a staff user from `python manage.py shell`. Only accounts with
 
 ## The panel
 
-- **Restaurant**: name, tagline, description, logo, hero photo, currency, contact, opening hours, social links.
+- **Restaurant**: name, tagline, description, logo, hero photo, currency, contact, opening hours, social links, and ordering on WhatsApp.
 - **Categories**: add, edit, delete, order, hide. A category with dishes can't be deleted.
 - **Dishes**: add, edit, delete, photo upload with preview, tags, "available today" toggle, hide.
 - **Tags**: add, edit, delete.
 
 Replacing or deleting a photo also removes the old file from `media/`.
+
+### Ordering on WhatsApp
+
+The menu can collect dishes in a cart and hand the finished order to WhatsApp.
+Nothing is stored here: the front end opens `wa.me` with the order written out,
+and the conversation is the only record. There is no order endpoint and no
+order table.
+
+The **Restaurant** page carries the settings, and they come back under
+`ordering` in `/api/v1/restaurant/`:
+
+| Field | What it does |
+|---|---|
+| WhatsApp number for orders | Where orders are sent. Digits only, full international form: `9613000000`. **Empty means no cart on the menu at all.** A number typed as `+961 3 000 000` or `00961…` is cleaned up on save |
+| Delivery fee | Added to the order when the customer chooses delivery, in the restaurant's currency. Empty or `0` shows as "Free" |
+| Home delivery offered / Pickup offered | Each one off removes that choice from the cart. Both off is refused while a number is set — clear the number instead |
+| Delivery note | One line under the delivery choice, e.g. "Delivery inside Chhim only" |
+
+The customer's name, the delivery address and any note go into the message
+only; they are never sent to this server.
 
 ## Reloading the starting data
 

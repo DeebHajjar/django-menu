@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ValidationError
 
-from menu.models import Category, Dish, OpeningHours, Restaurant, SocialLink, Tag
+from menu.models import Category, Dish, OpeningHours, Restaurant, SocialLink, Tag, digits_only
 
 
 class PanelFormMixin:
@@ -37,19 +37,52 @@ class RestaurantForm(PanelFormMixin, forms.ModelForm):
         fields = [
             "name", "tagline", "description", "currency", "logo", "hero_image",
             "address", "phone", "email",
+            "whatsapp_number", "delivery_fee", "delivery_enabled", "pickup_enabled", "delivery_note",
         ]
         widgets = {
             "description": forms.Textarea(attrs={"rows": 3}),
             "currency": forms.TextInput(attrs={"maxlength": 3, "style": "text-transform: uppercase"}),
             "logo": forms.ClearableFileInput(attrs={"accept": ".svg,.png,.jpg,.jpeg,.webp"}),
             "hero_image": forms.ClearableFileInput(attrs={"accept": "image/*"}),
+            "whatsapp_number": forms.TextInput(attrs={"inputmode": "tel", "placeholder": "9613000000"}),
+            "delivery_fee": forms.NumberInput(attrs={"min": 0, "step": "0.01"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # An empty fee box means "no delivery charge", not a missing answer.
+        self.fields["delivery_fee"].required = False
+
+    def clean_delivery_fee(self):
+        return self.cleaned_data.get("delivery_fee") or 0
 
     def clean_currency(self):
         currency = self.cleaned_data["currency"].strip().upper()
         if len(currency) != 3 or not currency.isalpha():
             raise ValidationError("Use a three-letter code such as LBP, USD or EUR.")
         return currency
+
+    def clean_whatsapp_number(self):
+        """A number written as +961 3 000 000 or 00961… is accepted and cleaned up."""
+        number = digits_only(self.cleaned_data["whatsapp_number"])
+        if number.startswith("00"):
+            number = number[2:]
+        if number and not 8 <= len(number) <= 15:
+            raise ValidationError(
+                "Write the number in full international form, digits only: 9613000000."
+            )
+        return number
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("whatsapp_number") and not (
+            cleaned.get("delivery_enabled") or cleaned.get("pickup_enabled")
+        ):
+            raise ValidationError(
+                "Offer delivery, pickup, or both — otherwise clear the WhatsApp number "
+                "to take ordering off the menu."
+            )
+        return cleaned
 
 
 class OpeningHoursForm(PanelFormMixin, forms.ModelForm):

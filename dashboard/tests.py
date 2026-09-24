@@ -71,6 +71,8 @@ class PanelTests(TestCase):
         self.login()
         data = {
             "name": "Nour", "currency": "usd",
+            "whatsapp_number": "+961 3 000 000", "delivery_fee": "2.50",
+            "delivery_enabled": "on", "pickup_enabled": "on",
             "hours-TOTAL_FORMS": "1", "hours-INITIAL_FORMS": "0",
             "hours-0-days": "Every day", "hours-0-hours": "11:00 – 23:00", "hours-0-order": "1",
             "social-TOTAL_FORMS": "1", "social-INITIAL_FORMS": "0",
@@ -80,8 +82,32 @@ class PanelTests(TestCase):
         self.assertRedirects(response, reverse("dashboard:restaurant"))
         restaurant = Restaurant.load()
         self.assertEqual(restaurant.currency, "USD")
+        self.assertEqual(restaurant.whatsapp_number, "9613000000")
+        self.assertTrue(restaurant.ordering_enabled)
         self.assertEqual(restaurant.opening_hours.count(), 1)
         self.assertEqual(restaurant.social_links.count(), 1)
+
+    def test_ordering_needs_delivery_or_pickup(self):
+        self.login()
+        data = {
+            "name": "Nour", "currency": "usd", "whatsapp_number": "9613000000",
+            "hours-TOTAL_FORMS": "0", "hours-INITIAL_FORMS": "0",
+            "social-TOTAL_FORMS": "0", "social-INITIAL_FORMS": "0",
+        }
+        response = self.client.post(reverse("dashboard:restaurant"), data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Offer delivery, pickup, or both")
+
+    def test_empty_delivery_fee_means_free(self):
+        self.login()
+        data = {
+            "name": "Nour", "currency": "usd", "whatsapp_number": "9613000000",
+            "delivery_fee": "", "pickup_enabled": "on",
+            "hours-TOTAL_FORMS": "0", "hours-INITIAL_FORMS": "0",
+            "social-TOTAL_FORMS": "0", "social-INITIAL_FORMS": "0",
+        }
+        self.client.post(reverse("dashboard:restaurant"), data)
+        self.assertEqual(Restaurant.load().delivery_fee, 0)
 
     def test_category_crud(self):
         self.login()

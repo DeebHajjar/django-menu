@@ -15,16 +15,39 @@ class SocialLinkSerializer(serializers.ModelSerializer):
         fields = ["label", "url"]
 
 
+class OrderingSerializer(serializers.ModelSerializer):
+    """
+    Everything the menu's cart needs, in one block.
+
+    `enabled` is the only flag the front end has to read: false means no
+    number is set, or neither way of receiving the order is offered, and the
+    cart stays out of the menu entirely.
+    """
+
+    enabled = serializers.BooleanField(source="ordering_enabled", read_only=True)
+
+    class Meta:
+        model = Restaurant
+        fields = [
+            "enabled", "whatsapp_number", "delivery_fee",
+            "delivery_enabled", "pickup_enabled", "delivery_note",
+        ]
+
+
 class RestaurantSerializer(serializers.ModelSerializer):
     opening_hours = OpeningHoursSerializer(many=True, read_only=True)
     social_links = SocialLinkSerializer(many=True, read_only=True)
+    ordering = serializers.SerializerMethodField()
 
     class Meta:
         model = Restaurant
         fields = [
             "name", "tagline", "description", "logo", "hero_image", "currency",
-            "address", "phone", "email", "opening_hours", "social_links",
+            "address", "phone", "email", "opening_hours", "social_links", "ordering",
         ]
+
+    def get_ordering(self, obj):
+        return OrderingSerializer(obj, context=self.context).data
 
 
 class CategorySerializer(serializers.ModelSerializer):

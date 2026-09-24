@@ -27,7 +27,11 @@ class ApiTests(TestCase):
         shutil.rmtree(MEDIA, ignore_errors=True)
 
     def setUp(self):
-        restaurant = Restaurant.objects.create(name="Nour", currency="lbp")
+        restaurant = Restaurant.objects.create(
+            name="Nour", currency="lbp", whatsapp_number="+961 3 000 000", delivery_fee="50000.00",
+            delivery_note="Delivery inside Chhim only",
+        )
+        self.restaurant = restaurant
         OpeningHours.objects.create(restaurant=restaurant, days="Every day", hours="11:00 – 23:00")
         SocialLink.objects.create(restaurant=restaurant, label="Instagram", url="https://instagram.com/nour")
         self.sandwiches = Category.objects.create(name="Sandwiches", order=1)
@@ -48,6 +52,28 @@ class ApiTests(TestCase):
         self.assertIsNone(data["logo"])
         self.assertEqual(data["opening_hours"], [{"days": "Every day", "hours": "11:00 – 23:00"}])
         self.assertEqual(data["social_links"], [{"label": "Instagram", "url": "https://instagram.com/nour"}])
+
+    def test_ordering_block(self):
+        ordering = self.client.get("/api/v1/restaurant/").json()["ordering"]
+        self.assertEqual(ordering, {
+            "enabled": True,
+            "whatsapp_number": "9613000000",       # punctuation stripped on save
+            "delivery_fee": "50000.00",
+            "delivery_enabled": True,
+            "pickup_enabled": True,
+            "delivery_note": "Delivery inside Chhim only",
+        })
+
+    def test_ordering_is_disabled_without_a_number(self):
+        self.restaurant.whatsapp_number = ""
+        self.restaurant.save()
+        self.assertFalse(self.client.get("/api/v1/restaurant/").json()["ordering"]["enabled"])
+
+    def test_ordering_is_disabled_when_neither_way_is_offered(self):
+        self.restaurant.delivery_enabled = False
+        self.restaurant.pickup_enabled = False
+        self.restaurant.save()
+        self.assertFalse(self.client.get("/api/v1/restaurant/").json()["ordering"]["enabled"])
 
     def test_restaurant_missing_is_404(self):
         Restaurant.objects.all().delete()

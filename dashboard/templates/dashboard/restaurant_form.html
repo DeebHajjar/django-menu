@@ -40,6 +40,20 @@
   </fieldset>
 
   <fieldset class="fieldset">
+    <legend class="fieldset__legend">Ordering on WhatsApp</legend>
+    <p class="field__help">The menu collects the dishes in a cart and sends the finished order to this number as a WhatsApp message. Nothing is saved here — the conversation is the only record. Clear the number to take ordering off the menu.</p>
+    <div class="grid-2">
+      {% include "dashboard/_field.html" with field=form.whatsapp_number %}
+      {% include "dashboard/_field.html" with field=form.delivery_fee %}
+    </div>
+    <div class="grid-2">
+      {% include "dashboard/_field.html" with field=form.delivery_enabled %}
+      {% include "dashboard/_field.html" with field=form.pickup_enabled %}
+    </div>
+    {% include "dashboard/_field.html" with field=form.delivery_note %}
+  </fieldset>
+
+  <fieldset class="fieldset">
     <legend class="fieldset__legend">Opening hours</legend>
     <p class="field__help">The first row is also shown at the bottom of the photo. Fill in the empty row to add one; save to get another empty row.</p>
     {{ hours_formset.management_form }}
