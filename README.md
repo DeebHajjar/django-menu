@@ -53,7 +53,9 @@ The **Restaurant** page carries the settings, and they come back under
 |---|---|
 | WhatsApp number for orders | Where orders are sent. Digits only, full international form: `9613000000`. **Empty means no cart on the menu at all.** A number typed as `+961 3 000 000` or `00961…` is cleaned up on save |
 | Delivery fee | Added to the order when the customer chooses delivery, in the restaurant's currency. Empty or `0` shows as "Free" |
-| Home delivery offered / Pickup offered | Each one off removes that choice from the cart. Both off is refused while a number is set — clear the number instead |
+| Home delivery offered / Pickup offered / Table reservation offered | Each one off removes that choice from the cart. All three off is refused while a number is set — clear the number instead |
+| Pickup | Asks the customer what time they will collect the order, for **today**. It arrives as "Pickup time (today): 6:30 PM" |
+| Table reservation | Asks the customer for the party size and a time, and books it for **today** — there is no date field. The chosen dishes go with it as a pre-order |
 | Delivery note | One line under the delivery choice, e.g. "Delivery inside Chhim only" |
 
 The customer's name, the delivery address and any note go into the message

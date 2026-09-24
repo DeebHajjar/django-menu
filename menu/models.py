@@ -74,6 +74,11 @@ class Restaurant(models.Model):
     pickup_enabled = models.BooleanField(
         "pickup offered", default=True, help_text="Off removes the pickup choice from the cart."
     )
+    reservation_enabled = models.BooleanField(
+        "table reservation offered",
+        default=True,
+        help_text="Off removes the table reservation choice from the cart.",
+    )
     delivery_note = models.CharField(
         max_length=160,
         blank=True,
@@ -92,7 +97,9 @@ class Restaurant(models.Model):
     @property
     def ordering_enabled(self):
         """Ordering needs somewhere to send the order and a way to receive it."""
-        return bool(self.whatsapp_number) and (self.delivery_enabled or self.pickup_enabled)
+        return bool(self.whatsapp_number) and any(
+            [self.delivery_enabled, self.pickup_enabled, self.reservation_enabled]
+        )
 
     @classmethod
     def load(cls):

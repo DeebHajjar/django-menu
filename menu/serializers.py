@@ -30,7 +30,7 @@ class OrderingSerializer(serializers.ModelSerializer):
         model = Restaurant
         fields = [
             "enabled", "whatsapp_number", "delivery_fee",
-            "delivery_enabled", "pickup_enabled", "delivery_note",
+            "delivery_enabled", "pickup_enabled", "reservation_enabled", "delivery_note",
         ]
 
 

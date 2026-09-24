@@ -61,6 +61,7 @@ class ApiTests(TestCase):
             "delivery_fee": "50000.00",
             "delivery_enabled": True,
             "pickup_enabled": True,
+            "reservation_enabled": True,
             "delivery_note": "Delivery inside Chhim only",
         })
 
@@ -69,11 +70,20 @@ class ApiTests(TestCase):
         self.restaurant.save()
         self.assertFalse(self.client.get("/api/v1/restaurant/").json()["ordering"]["enabled"])
 
-    def test_ordering_is_disabled_when_neither_way_is_offered(self):
+    def test_ordering_is_disabled_when_no_way_is_offered(self):
+        self.restaurant.delivery_enabled = False
+        self.restaurant.pickup_enabled = False
+        self.restaurant.reservation_enabled = False
+        self.restaurant.save()
+        self.assertFalse(self.client.get("/api/v1/restaurant/").json()["ordering"]["enabled"])
+
+    def test_reservation_alone_is_enough_to_offer_ordering(self):
         self.restaurant.delivery_enabled = False
         self.restaurant.pickup_enabled = False
         self.restaurant.save()
-        self.assertFalse(self.client.get("/api/v1/restaurant/").json()["ordering"]["enabled"])
+        ordering = self.client.get("/api/v1/restaurant/").json()["ordering"]
+        self.assertTrue(ordering["enabled"])
+        self.assertTrue(ordering["reservation_enabled"])
 
     def test_restaurant_missing_is_404(self):
         Restaurant.objects.all().delete()

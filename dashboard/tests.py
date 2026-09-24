@@ -72,7 +72,7 @@ class PanelTests(TestCase):
         data = {
             "name": "Nour", "currency": "usd",
             "whatsapp_number": "+961 3 000 000", "delivery_fee": "2.50",
-            "delivery_enabled": "on", "pickup_enabled": "on",
+            "delivery_enabled": "on", "pickup_enabled": "on", "reservation_enabled": "on",
             "hours-TOTAL_FORMS": "1", "hours-INITIAL_FORMS": "0",
             "hours-0-days": "Every day", "hours-0-hours": "11:00 – 23:00", "hours-0-order": "1",
             "social-TOTAL_FORMS": "1", "social-INITIAL_FORMS": "0",
@@ -87,7 +87,32 @@ class PanelTests(TestCase):
         self.assertEqual(restaurant.opening_hours.count(), 1)
         self.assertEqual(restaurant.social_links.count(), 1)
 
-    def test_ordering_needs_delivery_or_pickup(self):
+    def test_restaurant_page_shows_the_ordering_fieldset(self):
+        self.login()
+        response = self.client.get(reverse("dashboard:restaurant"))
+        self.assertContains(response, "Ordering on WhatsApp")
+        for field in ["whatsapp_number", "delivery_fee", "delivery_enabled",
+                      "pickup_enabled", "reservation_enabled", "delivery_note"]:
+            with self.subTest(field=field):
+                self.assertContains(response, f'name="{field}"')
+
+    def test_reservation_alone_is_a_valid_setup(self):
+        self.login()
+        data = {
+            "name": "Nour", "currency": "usd", "whatsapp_number": "9613000000",
+            "reservation_enabled": "on",
+            "hours-TOTAL_FORMS": "0", "hours-INITIAL_FORMS": "0",
+            "social-TOTAL_FORMS": "0", "social-INITIAL_FORMS": "0",
+        }
+        self.assertRedirects(
+            self.client.post(reverse("dashboard:restaurant"), data),
+            reverse("dashboard:restaurant"),
+        )
+        restaurant = Restaurant.load()
+        self.assertTrue(restaurant.ordering_enabled)
+        self.assertFalse(restaurant.delivery_enabled)
+
+    def test_ordering_needs_a_way_to_receive_the_order(self):
         self.login()
         data = {
             "name": "Nour", "currency": "usd", "whatsapp_number": "9613000000",
@@ -96,7 +121,7 @@ class PanelTests(TestCase):
         }
         response = self.client.post(reverse("dashboard:restaurant"), data)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Offer delivery, pickup, or both")
+        self.assertContains(response, "Offer at least one of delivery, pickup or table reservation")
 
     def test_empty_delivery_fee_means_free(self):
         self.login()

@@ -37,7 +37,8 @@ class RestaurantForm(PanelFormMixin, forms.ModelForm):
         fields = [
             "name", "tagline", "description", "currency", "logo", "hero_image",
             "address", "phone", "email",
-            "whatsapp_number", "delivery_fee", "delivery_enabled", "pickup_enabled", "delivery_note",
+            "whatsapp_number", "delivery_fee",
+            "delivery_enabled", "pickup_enabled", "reservation_enabled", "delivery_note",
         ]
         widgets = {
             "description": forms.Textarea(attrs={"rows": 3}),
@@ -75,12 +76,13 @@ class RestaurantForm(PanelFormMixin, forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        if cleaned.get("whatsapp_number") and not (
-            cleaned.get("delivery_enabled") or cleaned.get("pickup_enabled")
+        if cleaned.get("whatsapp_number") and not any(
+            cleaned.get(field)
+            for field in ("delivery_enabled", "pickup_enabled", "reservation_enabled")
         ):
             raise ValidationError(
-                "Offer delivery, pickup, or both — otherwise clear the WhatsApp number "
-                "to take ordering off the menu."
+                "Offer at least one of delivery, pickup or table reservation — otherwise "
+                "clear the WhatsApp number to take ordering off the menu."
             )
         return cleaned
 

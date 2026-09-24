@@ -99,6 +99,7 @@ class Command(BaseCommand):
             delivery_fee=ordering.get("delivery_fee", 0) or 0,
             delivery_enabled=ordering.get("delivery_enabled", True),
             pickup_enabled=ordering.get("pickup_enabled", True),
+            reservation_enabled=ordering.get("reservation_enabled", True),
             delivery_note=ordering.get("delivery_note", ""),
         )
         self.attach_file(restaurant, "logo", source, data.get("logo"))
