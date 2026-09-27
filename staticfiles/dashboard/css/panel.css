@@ -618,6 +618,16 @@ textarea.input {
   }
 }
 
+.rows__add {
+  margin-block-start: var(--space-m);
+}
+
+/* The Remove on a row added just now, lined up with the fields beside it */
+.row [data-formset-remove] {
+  align-self: center;
+  margin-block-start: 1.1rem;
+}
+
 .row .check {
   align-self: center;
   padding-block-start: 1.5rem;
