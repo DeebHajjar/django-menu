@@ -1,0 +1,58 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{% if object %}Edit {{ object.name }}{% else %}Add an offer{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="page-head__lead"><a href="{% url 'dashboard:offer_list' %}">Offers</a> /</p>
+    <h1 class="page-head__title">{% if object %}Edit “{{ object.name }}”{% else %}Add an offer{% endif %}</h1>
+  </div>
+  {% if object %}<a class="button button--quiet" href="{% url 'dashboard:offer_delete' object.pk %}">Delete</a>{% endif %}
+</div>
+
+<form class="form" method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="message message--error">{{ form.non_field_errors }}</div>{% endif %}
+
+  <fieldset class="fieldset">
+    <legend class="fieldset__legend">The offer</legend>
+    <div class="grid-2">
+      {% include "dashboard/_field.html" with field=form.name %}
+      {% include "dashboard/_field.html" with field=form.price %}
+    </div>
+    {% include "dashboard/_field.html" with field=form.description %}
+    <div class="grid-2">
+      {% include "dashboard/_field.html" with field=form.image %}
+      {% include "dashboard/_field.html" with field=form.order %}
+    </div>
+    {% include "dashboard/_field.html" with field=form.slug %}
+    {% include "dashboard/_field.html" with field=form.is_active %}
+  </fieldset>
+
+  <fieldset class="fieldset">
+    <legend class="fieldset__legend">What is inside</legend>
+    <p class="field__help">One row per dish, with how many of it the offer includes. Fill in an empty row to add a dish; save to get more empty rows. An offer needs at least one dish.</p>
+    {{ items_formset.management_form }}
+    {% if items_formset.non_form_errors %}<div class="message message--error">{{ items_formset.non_form_errors }}</div>{% endif %}
+    <div class="rows">
+      {% for row in items_formset %}
+        <div class="row">
+          {% for hidden in row.hidden_fields %}{{ hidden }}{% endfor %}
+          {% include "dashboard/_field.html" with field=row.dish %}
+          {% include "dashboard/_field.html" with field=row.quantity %}
+          {% include "dashboard/_field.html" with field=row.order %}
+          {% if row.instance.pk %}
+            <label class="check">{{ row.DELETE }} Remove</label>
+          {% else %}<span class="small muted" style="padding-block-end: .75rem">New</span>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <div class="form-actions">
+    <button class="button button--primary" type="submit">{% if object %}Save changes{% else %}Add the offer{% endif %}</button>
+    <a class="button button--quiet" href="{% url 'dashboard:offer_list' %}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

@@ -2,7 +2,9 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ValidationError
 
-from menu.models import Category, Dish, OpeningHours, Restaurant, SocialLink, Tag, digits_only
+from menu.models import (
+    Category, Dish, Offer, OfferItem, OpeningHours, Restaurant, SocialLink, Tag, digits_only,
+)
 
 
 class PanelFormMixin:
@@ -161,3 +163,62 @@ class TagForm(PanelFormMixin, forms.ModelForm):
 
     def clean_code(self):
         return self.cleaned_data["code"].strip().lower()
+
+
+class OfferForm(PanelFormMixin, forms.ModelForm):
+    class Meta:
+        model = Offer
+        fields = ["name", "description", "price", "image", "is_active", "order", "slug"]
+        widgets = {
+            "description": forms.TextInput(),
+            "price": forms.NumberInput(attrs={"min": 0, "step": "0.01"}),
+            "order": forms.NumberInput(attrs={"min": 0}),
+            "image": forms.ClearableFileInput(attrs={"accept": "image/*"}),
+        }
+
+
+class OfferItemForm(PanelFormMixin, forms.ModelForm):
+    class Meta:
+        model = OfferItem
+        fields = ["dish", "quantity", "order"]
+        widgets = {
+            "quantity": forms.NumberInput(attrs={"min": 1, "step": 1}),
+            "order": forms.NumberInput(attrs={"min": 0}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["dish"].empty_label = "Choose a dish"
+        self.fields["dish"].queryset = Dish.objects.select_related("category")
+        # PositiveSmallIntegerField offers min=0; an offer of nothing is not a row.
+        self.fields["quantity"].min_value = 1
+        self.fields["quantity"].widget.attrs["min"] = 1
+
+
+class BaseOfferItemFormSet(forms.BaseInlineFormSet):
+    """An offer with no dishes in it is not an offer."""
+
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+        kept = [
+            form for form in self.forms
+            if form.cleaned_data.get("dish") and not form.cleaned_data.get("DELETE")
+        ]
+        if not kept:
+            raise ValidationError("Add at least one dish to the offer.")
+
+        seen = set()
+        for form in kept:
+            dish = form.cleaned_data["dish"]
+            if dish.pk in seen:
+                raise ValidationError(
+                    f"“{dish.name}” is in the offer twice. Use one row and raise its quantity."
+                )
+            seen.add(dish.pk)
+
+
+OfferItemFormSet = forms.inlineformset_factory(
+    Offer, OfferItem, form=OfferItemForm, formset=BaseOfferItemFormSet, extra=3, can_delete=True
+)

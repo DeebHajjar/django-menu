@@ -22,6 +22,11 @@ urlpatterns = [
     path("dishes/<int:pk>/delete/", views.DishDeleteView.as_view(), name="dish_delete"),
     path("dishes/<int:pk>/toggle/", views.DishToggleView.as_view(), name="dish_toggle"),
 
+    path("offers/", views.OfferListView.as_view(), name="offer_list"),
+    path("offers/add/", views.OfferCreateView.as_view(), name="offer_create"),
+    path("offers/<int:pk>/", views.OfferUpdateView.as_view(), name="offer_update"),
+    path("offers/<int:pk>/delete/", views.OfferDeleteView.as_view(), name="offer_delete"),
+
     path("tags/", views.TagListView.as_view(), name="tag_list"),
     path("tags/add/", views.TagCreateView.as_view(), name="tag_create"),
     path("tags/<int:pk>/", views.TagUpdateView.as_view(), name="tag_update"),

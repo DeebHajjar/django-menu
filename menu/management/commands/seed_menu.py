@@ -14,7 +14,7 @@ from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from menu.models import Category, Dish, OpeningHours, Restaurant, SocialLink, Tag
+from menu.models import Category, Dish, Offer, OfferItem, OpeningHours, Restaurant, SocialLink, Tag
 
 DEFAULT_SOURCE = settings.BASE_DIR.parent / "restaurant-menu-simple"
 # The labels the front end knows (TAG_LABELS in js/components/dishCard.js).
@@ -46,12 +46,17 @@ class Command(BaseCommand):
         restaurant_data = self.read_json(mock / "restaurant.json")
         categories_data = self.read_json(mock / "categories.json")
         dishes_data = self.read_json(mock / "dishes.json")
+        # Offers came later than the other files: a front end without them still seeds.
+        offers_path = mock / "offers.json"
+        offers_data = self.read_json(offers_path) if offers_path.is_file() else []
 
         if not reset and (Category.objects.exists() or Dish.objects.exists()):
             raise CommandError("The menu already has data. Run again with --reset to replace it.")
 
         with transaction.atomic():
             if reset:
+                OfferItem.objects.all().delete()
+                Offer.objects.all().delete()
                 Dish.objects.all().delete()
                 Category.objects.all().delete()
                 Tag.objects.all().delete()
@@ -62,11 +67,42 @@ class Command(BaseCommand):
             count = self.load_dishes(dishes_data, categories, source)
             for code in KNOWN_TAGS:
                 Tag.objects.get_or_create(code=code)
+            offers = self.load_offers(offers_data, source)
 
         self.stdout.write(self.style.SUCCESS(
-            f"Loaded the restaurant, {len(categories)} categories, {count} dishes "
-            f"and {Tag.objects.count()} tags. Images copied to {settings.MEDIA_ROOT}."
+            f"Loaded the restaurant, {len(categories)} categories, {count} dishes, "
+            f"{offers} offers and {Tag.objects.count()} tags. "
+            f"Images copied to {settings.MEDIA_ROOT}."
         ))
+
+    def load_offers(self, rows, source):
+        """Each row names its dishes by slug, so the dishes must exist already."""
+        dishes = {dish.slug: dish for dish in Dish.objects.all()}
+        loaded = 0
+        for order, row in enumerate(rows, start=1):
+            offer = Offer(
+                name=row["name"],
+                slug=row.get("slug", ""),
+                description=row.get("description", ""),
+                price=Decimal(str(row["price"])),
+                is_active=row.get("is_active", True),
+                order=row.get("order", order),
+            )
+            self.attach_file(offer, "image", source, row.get("image"))
+            offer.save()
+
+            for position, item in enumerate(row.get("items", []), start=1):
+                dish = dishes.get(item["dish"])
+                if dish is None:
+                    self.stderr.write(self.style.WARNING(
+                        f"Offer “{offer.name}”: no dish with slug “{item['dish']}”, row skipped."
+                    ))
+                    continue
+                OfferItem.objects.create(
+                    offer=offer, dish=dish, quantity=item.get("quantity", 1), order=position
+                )
+            loaded += 1
+        return loaded
 
     def read_json(self, path):
         try:

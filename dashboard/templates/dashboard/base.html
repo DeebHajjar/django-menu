@@ -45,6 +45,7 @@
       <li class="tabs__item"><a class="tabs__link" href="{% url 'dashboard:restaurant' %}"{% if section == 'restaurant' %} aria-current="page"{% endif %}>Restaurant</a></li>
       <li class="tabs__item"><a class="tabs__link" href="{% url 'dashboard:category_list' %}"{% if section == 'categories' %} aria-current="page"{% endif %}>Categories</a></li>
       <li class="tabs__item"><a class="tabs__link" href="{% url 'dashboard:dish_list' %}"{% if section == 'dishes' %} aria-current="page"{% endif %}>Dishes</a></li>
+      <li class="tabs__item"><a class="tabs__link" href="{% url 'dashboard:offer_list' %}"{% if section == 'offers' %} aria-current="page"{% endif %}>Offers</a></li>
       <li class="tabs__item"><a class="tabs__link" href="{% url 'dashboard:tag_list' %}"{% if section == 'tags' %} aria-current="page"{% endif %}>Tags</a></li>
     </ul>
   </nav>

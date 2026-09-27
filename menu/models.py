@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal
 
 from django.core.validators import FileExtensionValidator, MinValueValidator, RegexValidator
 from django.db import models
@@ -202,3 +203,67 @@ class Dish(models.Model):
         if not self.slug:
             self.slug = unique_slug(self, self.name)
         super().save(*args, **kwargs)
+
+
+class Offer(models.Model):
+    """
+    Several dishes sold together for one price, shown in the menu's Offers
+    window. The price is the whole thing, not a discount on each dish.
+    """
+
+    name = models.CharField(max_length=120)
+    slug = models.SlugField(unique=True, blank=True, help_text="Filled in from the name if left empty.")
+    description = models.CharField(max_length=255, blank=True, help_text="One short line.")
+    image = models.ImageField(
+        upload_to="offers/", blank=True, help_text="Optional. A photo of the whole spread."
+    )
+    price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        help_text="What the customer pays for everything in the offer.",
+    )
+    is_active = models.BooleanField(
+        "shown on the menu", default=True, help_text="Hidden offers disappear from the Offers window."
+    )
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "name"]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = unique_slug(self, self.name)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_available(self):
+        """An offer can only be ordered while every dish in it can be."""
+        items = self.items.all()
+        return bool(items) and all(
+            item.dish.is_available and item.dish.is_published for item in items
+        )
+
+    @property
+    def full_price(self):
+        """What the same dishes would cost separately, for the "was" line."""
+        return sum((item.dish.price * item.quantity for item in self.items.all()), Decimal("0"))
+
+
+class OfferItem(models.Model):
+    """One dish inside an offer, with how many of it are included."""
+
+    offer = models.ForeignKey(Offer, related_name="items", on_delete=models.CASCADE)
+    # PROTECT: a dish that is part of an offer cannot quietly vanish from it.
+    dish = models.ForeignKey(Dish, related_name="offer_items", on_delete=models.PROTECT)
+    quantity = models.PositiveSmallIntegerField(default=1, validators=[MinValueValidator(1)])
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"{self.quantity} × {self.dish.name}"

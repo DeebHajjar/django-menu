@@ -9,11 +9,13 @@ from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DeleteView, ListView, TemplateView, UpdateView
 
-from menu.models import Category, Dish, Restaurant, Tag
+from menu.models import Category, Dish, Offer, Restaurant, Tag
 
 from .forms import (
     CategoryForm,
     DishForm,
+    OfferForm,
+    OfferItemFormSet,
     OpeningHoursFormSet,
     RestaurantForm,
     SocialLinkFormSet,
@@ -217,10 +219,23 @@ class DishDeleteView(DishMixin, DeleteView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(kind="dish", cancel_url=reverse("dashboard:dish_list"))
+        context.update(
+            kind="dish",
+            # A dish inside an offer cannot be deleted: the offer would keep
+            # its price while quietly losing part of what it promises.
+            blockers=[item.offer for item in self.object.offer_items.select_related("offer")],
+            blocker_message="Take the dish out of these offers first:",
+            cancel_url=reverse("dashboard:dish_list"),
+        )
         return context
 
     def form_valid(self, form):
+        if self.object.offer_items.exists():
+            messages.error(
+                self.request,
+                f"“{self.object}” is part of an offer, so it was not deleted.",
+            )
+            return redirect("dashboard:dish_delete", pk=self.object.pk)
         messages.success(self.request, f"“{self.object}” was deleted.")
         return super().form_valid(form)
 
@@ -273,6 +288,88 @@ class TagDeleteView(TagMixin, DeleteView):
             note=f"It will be removed from {self.object.dishes.count()} dish(es). The dishes themselves stay.",
             cancel_url=reverse("dashboard:tag_list"),
         )
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, f"“{self.object}” was deleted.")
+        return super().form_valid(form)
+
+
+# Offers ------------------------------------------------------------------
+
+class OfferMixin(StaffRequiredMixin):
+    model = Offer
+    form_class = OfferForm
+    section = "offers"
+    success_url = reverse_lazy("dashboard:offer_list")
+
+
+class OfferListView(OfferMixin, ListView):
+    template_name = "dashboard/offer_list.html"
+
+    def get_queryset(self):
+        return Offer.objects.prefetch_related("items__dish")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        restaurant = Restaurant.load()
+        context["currency"] = restaurant.currency if restaurant else "LBP"
+        return context
+
+
+class OfferFormMixin(OfferMixin):
+    """Create and edit share one template: the offer, plus its rows of dishes."""
+
+    template_name = "dashboard/offer_form.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if "items_formset" not in context:
+            context["items_formset"] = OfferItemFormSet(
+                self.request.POST or None, instance=self.object, prefix="items"
+            )
+        return context
+
+    def form_valid(self, form):
+        creating = self.object is None
+        items = OfferItemFormSet(self.request.POST, instance=form.instance, prefix="items")
+        # The offer has to exist before its rows can point at it, so both are
+        # saved together and rolled back together.
+        with transaction.atomic():
+            self.object = form.save()
+            items.instance = self.object
+            if not items.is_valid():
+                transaction.set_rollback(True)
+                if creating:
+                    # The row is gone again: the page must not come back as
+                    # "Edit this offer", offering to delete something that
+                    # no longer exists.
+                    self.object = None
+                    form.instance.pk = None
+                return self.form_invalid_with_items(form, items)
+            items.save()
+        messages.success(self.request, self.success_message())
+        return redirect(self.get_success_url())
+
+    def form_invalid_with_items(self, form, items):
+        return self.render_to_response(self.get_context_data(form=form, items_formset=items))
+
+
+class OfferCreateView(OfferFormMixin, SuccessMessageMixin, CreateView):
+    success_verb = "added"
+
+
+class OfferUpdateView(OfferFormMixin, SuccessMessageMixin, UpdateView):
+    pass
+
+
+class OfferDeleteView(OfferMixin, DeleteView):
+    template_name = "dashboard/confirm_delete.html"
+    form_class = forms.Form  # the confirmation has no fields
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(kind="offer", cancel_url=reverse("dashboard:offer_list"))
         return context
 
     def form_valid(self, form):

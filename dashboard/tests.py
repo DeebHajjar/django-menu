@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from menu.models import Category, Dish, Restaurant, Tag
+from menu.models import Category, Dish, Offer, OfferItem, Restaurant, Tag
 from menu.tests import image
 
 MEDIA = tempfile.mkdtemp()
@@ -60,6 +60,7 @@ class PanelTests(TestCase):
             reverse("dashboard:dish_list"), reverse("dashboard:dish_list") + "?category=plates",
             reverse("dashboard:dish_create"), reverse("dashboard:dish_update", args=[dish.pk]),
             reverse("dashboard:dish_delete", args=[dish.pk]),
+            reverse("dashboard:offer_list"), reverse("dashboard:offer_create"),
             reverse("dashboard:tag_list"), reverse("dashboard:tag_create"),
             reverse("dashboard:tag_update", args=[tag.pk]), reverse("dashboard:tag_delete", args=[tag.pk]),
         ]
@@ -206,3 +207,126 @@ class PanelTests(TestCase):
         self.login()
         response = self.client.post(reverse("dashboard:logout"))
         self.assertRedirects(response, reverse("dashboard:login"))
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class OfferPanelTests(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(MEDIA, ignore_errors=True)
+
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_user("owner", password="a-long-password-1", is_staff=True)
+        self.client.force_login(self.staff)
+        self.category = Category.objects.create(name="Plates")
+        self.tawouk = Dish.objects.create(
+            category=self.category, name="Tawouk", price="400000", image=image()
+        )
+        self.fattoush = Dish.objects.create(
+            category=self.category, name="Fattoush", price="300000", image=image()
+        )
+
+    def rows(self, *items, total=None, initial=0):
+        """Formset payload for the rows of dishes inside an offer."""
+        data = {
+            "items-TOTAL_FORMS": str(total if total is not None else len(items)),
+            "items-INITIAL_FORMS": str(initial),
+        }
+        for index, (dish, quantity) in enumerate(items):
+            data[f"items-{index}-dish"] = str(dish.pk) if dish else ""
+            data[f"items-{index}-quantity"] = str(quantity)
+            data[f"items-{index}-order"] = str(index + 1)
+        return data
+
+    def test_add_an_offer_with_its_dishes(self):
+        data = {"name": "Family meal", "price": "900000", "order": "1", "is_active": "on"}
+        data.update(self.rows((self.tawouk, 2), (self.fattoush, 1)))
+        response = self.client.post(reverse("dashboard:offer_create"), data)
+        self.assertRedirects(response, reverse("dashboard:offer_list"))
+
+        offer = Offer.objects.get(name="Family meal")
+        self.assertEqual(offer.slug, "family-meal")
+        self.assertEqual(offer.items.count(), 2)
+        self.assertEqual(offer.items.first().quantity, 2)
+        self.assertEqual(offer.full_price, 1100000)
+
+    def test_an_offer_needs_at_least_one_dish(self):
+        data = {"name": "Empty", "price": "1000", "order": "1", "is_active": "on"}
+        data.update({"items-TOTAL_FORMS": "0", "items-INITIAL_FORMS": "0"})
+        response = self.client.post(reverse("dashboard:offer_create"), data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Add at least one dish to the offer.")
+        self.assertFalse(Offer.objects.filter(name="Empty").exists())
+
+    def test_a_row_without_a_dish_is_reported(self):
+        data = {"name": "Halfway", "price": "1000", "order": "1", "is_active": "on"}
+        data.update(self.rows((None, 2)))
+        response = self.client.post(reverse("dashboard:offer_create"), data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "This field is required.")
+        self.assertFalse(Offer.objects.filter(name="Halfway").exists())
+
+    def test_a_refused_new_offer_does_not_come_back_as_an_edit(self):
+        """The offer was rolled back, so the page must not offer to delete it."""
+        data = {"name": "Empty", "price": "1000", "order": "1", "is_active": "on"}
+        data.update({"items-TOTAL_FORMS": "0", "items-INITIAL_FORMS": "0"})
+        response = self.client.post(reverse("dashboard:offer_create"), data)
+        self.assertContains(response, "Add an offer")
+        self.assertNotContains(response, "/delete/")
+        # What was typed is still in the form, ready to be finished.
+        self.assertContains(response, 'value="Empty"')
+
+    def test_the_same_dish_cannot_be_listed_twice(self):
+        data = {"name": "Double", "price": "1000", "order": "1", "is_active": "on"}
+        data.update(self.rows((self.tawouk, 1), (self.tawouk, 1)))
+        response = self.client.post(reverse("dashboard:offer_create"), data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "is in the offer twice")
+        self.assertFalse(Offer.objects.filter(name="Double").exists())
+
+    def test_editing_an_offer_keeps_its_rows(self):
+        offer = Offer.objects.create(name="Family meal", price="900000")
+        item = OfferItem.objects.create(offer=offer, dish=self.tawouk, quantity=2)
+
+        data = {"name": "Family feast", "price": "950000", "order": "0", "is_active": "on",
+                "slug": offer.slug}
+        data.update(self.rows(total=1, initial=1))
+        data.update({
+            "items-0-id": str(item.pk), "items-0-offer": str(offer.pk),
+            "items-0-dish": str(self.tawouk.pk), "items-0-quantity": "3", "items-0-order": "1",
+        })
+        response = self.client.post(reverse("dashboard:offer_update", args=[offer.pk]), data)
+        self.assertRedirects(response, reverse("dashboard:offer_list"))
+        offer.refresh_from_db()
+        item.refresh_from_db()
+        self.assertEqual(offer.name, "Family feast")
+        self.assertEqual(item.quantity, 3)
+
+    def test_offer_list_shows_what_is_inside(self):
+        offer = Offer.objects.create(name="Family meal", price="900000")
+        OfferItem.objects.create(offer=offer, dish=self.tawouk, quantity=2)
+        response = self.client.get(reverse("dashboard:offer_list"))
+        self.assertContains(response, "Family meal")
+        self.assertContains(response, "2 × Tawouk")
+
+    def test_delete_an_offer(self):
+        offer = Offer.objects.create(name="Family meal", price="900000")
+        OfferItem.objects.create(offer=offer, dish=self.tawouk, quantity=2)
+        response = self.client.post(reverse("dashboard:offer_delete", args=[offer.pk]))
+        self.assertRedirects(response, reverse("dashboard:offer_list"))
+        self.assertFalse(Offer.objects.exists())
+        # The dishes it held are untouched.
+        self.assertTrue(Dish.objects.filter(pk=self.tawouk.pk).exists())
+
+    def test_a_dish_inside_an_offer_is_not_deleted(self):
+        offer = Offer.objects.create(name="Family meal", price="900000")
+        OfferItem.objects.create(offer=offer, dish=self.tawouk, quantity=2)
+
+        page = self.client.get(reverse("dashboard:dish_delete", args=[self.tawouk.pk]))
+        self.assertContains(page, "Take the dish out of these offers first:")
+        self.assertContains(page, "Family meal")
+
+        self.client.post(reverse("dashboard:dish_delete", args=[self.tawouk.pk]))
+        self.assertTrue(Dish.objects.filter(pk=self.tawouk.pk).exists())

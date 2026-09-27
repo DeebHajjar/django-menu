@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Category, Dish, OpeningHours, Restaurant, SocialLink
+from .models import Category, Dish, Offer, OfferItem, OpeningHours, Restaurant, SocialLink
 
 
 class OpeningHoursSerializer(serializers.ModelSerializer):
@@ -72,4 +72,31 @@ class DishSerializer(serializers.ModelSerializer):
         fields = [
             "id", "slug", "name", "description", "ingredients", "price", "image",
             "category", "tags", "is_available", "order",
+        ]
+
+
+class OfferItemSerializer(serializers.ModelSerializer):
+    """A dish inside an offer: what it is, how many, and what it costs alone."""
+
+    dish = serializers.SlugRelatedField(slug_field="slug", read_only=True)
+    name = serializers.CharField(source="dish.name", read_only=True)
+    price = serializers.DecimalField(
+        source="dish.price", max_digits=12, decimal_places=2, read_only=True
+    )
+
+    class Meta:
+        model = OfferItem
+        fields = ["dish", "name", "quantity", "price"]
+
+
+class OfferSerializer(serializers.ModelSerializer):
+    items = OfferItemSerializer(many=True, read_only=True)
+    is_available = serializers.BooleanField(read_only=True)
+    full_price = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = Offer
+        fields = [
+            "id", "slug", "name", "description", "image", "price",
+            "full_price", "items", "is_available", "order",
         ]

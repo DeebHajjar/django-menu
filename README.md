@@ -8,6 +8,7 @@ A control panel for editing the menu, and the read-only REST API the front end (
 | `/api/v1/restaurant/` | Restaurant details, including the `ordering` block |
 | `/api/v1/categories/` | Categories shown on the menu |
 | `/api/v1/dishes/?category=<slug>` | Dishes of one category |
+| `/api/v1/offers/` | Offers: several dishes for one price |
 
 The API follows `restaurant-menu-simple-cart/docs/API.md` exactly. The older
 `restaurant-menu-simple`, `restaurant-menu` and `restaurant-menu-light` front
@@ -36,6 +37,12 @@ create a staff user from `python manage.py shell`. Only accounts with
 - **Categories**: add, edit, delete, order, hide. A category with dishes can't be deleted.
 - **Dishes**: add, edit, delete, photo upload with preview, tags, "available today" toggle, hide.
 - **Tags**: add, edit, delete.
+- **Offers**: add, edit, delete. An offer is a name, a price for the whole
+  thing, an optional photo, and rows of dish + quantity. It needs at least one
+  dish, and the same dish cannot be listed twice — raise its quantity instead.
+  An offer stops being orderable on the menu while any dish inside it is
+  unavailable or hidden, and a dish that is part of an offer cannot be deleted
+  until it is taken out of it.
 
 Replacing or deleting a photo also removes the old file from `media/`.
 

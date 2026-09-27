@@ -2,9 +2,10 @@ import shutil
 import tempfile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db.models import ProtectedError
 from django.test import TestCase, override_settings
 
-from .models import Category, Dish, OpeningHours, Restaurant, SocialLink, Tag
+from .models import Category, Dish, Offer, OfferItem, OpeningHours, Restaurant, SocialLink, Tag
 
 MEDIA = tempfile.mkdtemp()
 
@@ -122,3 +123,68 @@ class ApiTests(TestCase):
     def test_slugs_are_unique(self):
         other = Category.objects.create(name="Sandwiches")
         self.assertEqual(other.slug, "sandwiches-2")
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class OfferApiTests(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(MEDIA, ignore_errors=True)
+
+    def setUp(self):
+        Restaurant.objects.create(name="Nour")
+        self.category = Category.objects.create(name="Plates")
+        self.tawouk = Dish.objects.create(
+            category=self.category, name="Tawouk", price="400000.00", image=image()
+        )
+        self.fattoush = Dish.objects.create(
+            category=self.category, name="Fattoush", price="300000.00", image=image()
+        )
+        self.offer = Offer.objects.create(name="Family meal", price="900000.00", order=1)
+        OfferItem.objects.create(offer=self.offer, dish=self.tawouk, quantity=2, order=1)
+        OfferItem.objects.create(offer=self.offer, dish=self.fattoush, quantity=1, order=2)
+
+    def test_offers_list(self):
+        data = self.client.get("/api/v1/offers/").json()
+        self.assertEqual(len(data), 1)
+        offer = data[0]
+        self.assertEqual(offer["name"], "Family meal")
+        self.assertEqual(offer["slug"], "family-meal")
+        self.assertEqual(offer["price"], "900000.00")
+        self.assertTrue(offer["is_available"])
+        self.assertEqual(offer["items"], [
+            {"dish": "tawouk", "name": "Tawouk", "quantity": 2, "price": "400000.00"},
+            {"dish": "fattoush", "name": "Fattoush", "quantity": 1, "price": "300000.00"},
+        ])
+
+    def test_full_price_is_what_the_dishes_cost_separately(self):
+        # 2 × 400,000 + 1 × 300,000 = 1,100,000, against an offer price of 900,000.
+        self.assertEqual(self.client.get("/api/v1/offers/").json()[0]["full_price"], "1100000.00")
+
+    def test_hidden_offers_are_not_sent(self):
+        self.offer.is_active = False
+        self.offer.save()
+        self.assertEqual(self.client.get("/api/v1/offers/").json(), [])
+
+    def test_an_offer_is_unavailable_while_one_of_its_dishes_is(self):
+        self.tawouk.is_available = False
+        self.tawouk.save()
+        offer = self.client.get("/api/v1/offers/").json()[0]
+        self.assertFalse(offer["is_available"])
+
+    def test_an_offer_is_unavailable_while_one_of_its_dishes_is_unpublished(self):
+        self.fattoush.is_published = False
+        self.fattoush.save()
+        self.assertFalse(self.client.get("/api/v1/offers/").json()[0]["is_available"])
+
+    def test_an_empty_offer_is_not_orderable(self):
+        self.offer.items.all().delete()
+        self.assertFalse(self.client.get("/api/v1/offers/").json()[0]["is_available"])
+
+    def test_offers_are_read_only(self):
+        self.assertEqual(self.client.post("/api/v1/offers/", {"name": "x"}).status_code, 405)
+
+    def test_a_dish_inside_an_offer_cannot_be_deleted(self):
+        with self.assertRaises(ProtectedError):
+            self.tawouk.delete()

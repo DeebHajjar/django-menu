@@ -2,8 +2,8 @@ from django.db.models import Count, Q
 from django.http import Http404
 from rest_framework import generics, viewsets
 
-from .models import Category, Dish, Restaurant
-from .serializers import CategorySerializer, DishSerializer, RestaurantSerializer
+from .models import Category, Dish, Offer, Restaurant
+from .serializers import CategorySerializer, DishSerializer, OfferSerializer, RestaurantSerializer
 
 
 class RestaurantView(generics.RetrieveAPIView):
@@ -40,3 +40,13 @@ class DishViewSet(viewsets.ReadOnlyModelViewSet):
         if category:
             queryset = queryset.filter(category__slug=category)
         return queryset
+
+
+class OfferViewSet(viewsets.ReadOnlyModelViewSet):
+    """Offers shown in the menu's Offers window, newest arrangement first."""
+
+    serializer_class = OfferSerializer
+    lookup_field = "slug"
+
+    def get_queryset(self):
+        return Offer.objects.filter(is_active=True).prefetch_related("items__dish")
