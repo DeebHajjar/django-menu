@@ -30,12 +30,12 @@
     {% include "dashboard/_field.html" with field=form.is_active %}
   </fieldset>
 
-  <fieldset class="fieldset">
+  <fieldset class="fieldset" data-formset="items">
     <legend class="fieldset__legend">What is inside</legend>
-    <p class="field__help">One row per dish, with how many of it the offer includes. Fill in an empty row to add a dish; save to get more empty rows. An offer needs at least one dish.</p>
+    <p class="field__help">One row per dish, with how many of it the offer includes. Use “Add a dish” for as many rows as the offer needs. An offer needs at least one dish, and the same dish cannot be listed twice — raise its quantity instead.</p>
     {{ items_formset.management_form }}
     {% if items_formset.non_form_errors %}<div class="message message--error">{{ items_formset.non_form_errors }}</div>{% endif %}
-    <div class="rows">
+    <div class="rows" data-formset-rows>
       {% for row in items_formset %}
         <div class="row">
           {% for hidden in row.hidden_fields %}{{ hidden }}{% endfor %}
@@ -48,6 +48,24 @@
         </div>
       {% endfor %}
     </div>
+
+    {# The shape of one more row. `__prefix__` becomes its number when added. #}
+    <template data-formset-template>
+      <div class="row" data-formset-new>
+        {% with row=items_formset.empty_form %}
+          {% for hidden in row.hidden_fields %}{{ hidden }}{% endfor %}
+          {% include "dashboard/_field.html" with field=row.dish %}
+          {% include "dashboard/_field.html" with field=row.quantity %}
+          {% include "dashboard/_field.html" with field=row.order %}
+          <button class="button button--small button--quiet" type="button" data-formset-remove>Remove</button>
+        {% endwith %}
+      </div>
+    </template>
+
+    {# Hidden until the script takes over, so it is never a button that does nothing. #}
+    <p class="rows__add">
+      <button class="button button--small" type="button" data-formset-add hidden>Add a dish</button>
+    </p>
   </fieldset>
 
   <div class="form-actions">

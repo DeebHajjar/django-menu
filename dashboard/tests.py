@@ -252,6 +252,63 @@ class OfferPanelTests(TestCase):
         self.assertEqual(offer.items.first().quantity, 2)
         self.assertEqual(offer.full_price, 1100000)
 
+    def test_the_form_offers_a_way_to_add_more_rows(self):
+        response = self.client.get(reverse("dashboard:offer_create"))
+        self.assertContains(response, "data-formset=\"items\"")
+        self.assertContains(response, "data-formset-template")
+        self.assertContains(response, "Add a dish")
+        # The template carries Django's placeholder for the row number.
+        self.assertContains(response, "items-__prefix__-dish")
+
+    def test_more_dishes_than_the_form_starts_with(self):
+        """The Add button only adds rows: the server has to accept them."""
+        extras = [
+            Dish.objects.create(
+                category=self.category, name=f"Extra {index}", price="1000", image=image()
+            )
+            for index in range(3)
+        ]
+        dishes = [(self.tawouk, 1), (self.fattoush, 2)] + [(dish, 1) for dish in extras]
+        self.assertGreater(len(dishes), 3, "more rows than the formset renders by default")
+
+        data = {"name": "Everything", "price": "100", "order": "1", "is_active": "on"}
+        data.update(self.rows(*dishes))
+        response = self.client.post(reverse("dashboard:offer_create"), data)
+        self.assertRedirects(response, reverse("dashboard:offer_list"))
+        self.assertEqual(Offer.objects.get(name="Everything").items.count(), 5)
+
+    def test_a_removed_row_is_sent_back_untouched_and_skipped(self):
+        """
+        Removing a row puts it back the way it arrived rather than deleting
+        it, so its number is still there. What arrives must be skipped.
+        """
+        data = {"name": "Gappy", "price": "100", "order": "1", "is_active": "on",
+                "items-TOTAL_FORMS": "3", "items-INITIAL_FORMS": "0"}
+        data.update({
+            "items-0-dish": str(self.tawouk.pk), "items-0-quantity": "1", "items-0-order": "1",
+            # Row 1 was added, then removed: the untouched defaults come back.
+            "items-1-dish": "", "items-1-quantity": "1", "items-1-order": "0",
+            "items-2-dish": str(self.fattoush.pk), "items-2-quantity": "2", "items-2-order": "3",
+        })
+        response = self.client.post(reverse("dashboard:offer_create"), data)
+        self.assertRedirects(response, reverse("dashboard:offer_list"))
+        self.assertEqual(Offer.objects.get(name="Gappy").items.count(), 2)
+
+    def test_a_row_that_goes_missing_is_reported_not_ignored(self):
+        """
+        The opposite of the above, pinned down because it decided the design:
+        a number with no data at all is a form missing required values, and
+        the whole save fails rather than quietly dropping a dish.
+        """
+        data = {"name": "Gone", "price": "100", "order": "1", "is_active": "on",
+                "items-TOTAL_FORMS": "2", "items-INITIAL_FORMS": "0"}
+        data.update({
+            "items-0-dish": str(self.tawouk.pk), "items-0-quantity": "1", "items-0-order": "1",
+        })
+        response = self.client.post(reverse("dashboard:offer_create"), data)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Offer.objects.filter(name="Gone").exists())
+
     def test_an_offer_needs_at_least_one_dish(self):
         data = {"name": "Empty", "price": "1000", "order": "1", "is_active": "on"}
         data.update({"items-TOTAL_FORMS": "0", "items-INITIAL_FORMS": "0"})
